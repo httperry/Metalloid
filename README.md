@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🌌 Metalloid</h1>
+  <h1>Metalloid</h1>
   <p><strong>A high-performance Direct3D 12 to Apple Metal translation layer for Apple Silicon.</strong></p>
 
   <p>
@@ -12,7 +12,7 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 **Metalloid** is an advanced translation layer engineered specifically for Apple Silicon hardware. It maps **Direct3D 12 API** calls directly to **Apple's Metal framework**, allowing complex DirectX 12 engines—such as **Unreal Engine 5**—to run natively on macOS with zero-overhead translation.
 
@@ -20,7 +20,7 @@ By utilizing modern Metal 4 features and dynamic shader compilation, Metalloid d
 
 ---
 
-## ⚡ Performance & Compatibility
+## Performance & Compatibility
 
 Metalloid has been heavily optimized for complex rendering pipelines. When benchmarking the **Unreal Engine 5 London Demo**, Metalloid achieved **56 FPS at 17.84ms**, demonstrating a staggering **311% performance uplift** compared to Apple's native D3DMetal layer (which averaged 18 FPS at 55ms on the exact same hardware and workload).
 
@@ -35,7 +35,7 @@ Metalloid has been heavily optimized for complex rendering pipelines. When bench
 
 ---
 
-## 🛠️ Build Requirements
+## Build Requirements
 
 Ensure your system meets the following prerequisites before compiling:
 
@@ -56,6 +56,6 @@ This will produce the `d3d12.dylib` and `dxgi.dylib` files required for injectio
 
 ---
 
-## ⚖️ Disclaimer
+## Disclaimer
 
 *This project is an independent translation layer and is not officially affiliated with, nor endorsed by, Microsoft Corporation or Apple Inc.*
