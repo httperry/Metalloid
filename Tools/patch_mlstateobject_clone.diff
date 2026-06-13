@@ -1,0 +1,17 @@
+--- Include/Metalloid/MLStateObject.h
++++ Include/Metalloid/MLStateObject.h
+@@ -37,6 +37,13 @@
+     MetalComputePipelineState GetMetalPipeline() const { return m_metalPipeline; }
+     void AddWorkGraphPipeline(const std::wstring& name, MetalComputePipelineState pipeline) { m_workGraphPipelines[name] = pipeline; }
+     MetalComputePipelineState GetWorkGraphPipeline(const std::wstring& name) const { auto it = m_workGraphPipelines.find(name); return it != m_workGraphPipelines.end() ? it->second : nullptr; }
++    
++    void CloneFrom(const MLStateObject* other) {
++        m_metalPipeline = other->m_metalPipeline;
++        m_workGraphPipelines = other->m_workGraphPipelines;
++        m_shaderIdentifiers = other->m_shaderIdentifiers;
++        m_functionHandles = other->m_functionHandles;
++    }
++
+     void AddShaderIdentifier(const std::wstring& exportName, const std::array<uint8_t, 32>& identifier) {
+         m_shaderIdentifiers[exportName] = identifier;
+     }

@@ -1,0 +1,18 @@
+# Build directories
+build/
+build_xcode/
+
+# Dependencies
+dependencies/
+
+# Logs and debug output
+Logs/
+*.log
+
+# IDE and OS specific
+.DS_Store
+.idea/
+.vscode/
+
+# Wine Prefix used for testing
+WinePrefix/
