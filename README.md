@@ -1,61 +1,39 @@
-<div align="center">
-  <h1>Metalloid</h1>
-  <p><strong>A high-performance Direct3D 12 to Apple Metal translation layer for Apple Silicon.</strong></p>
+# Metalloid
 
-  <p>
-    <img src="https://img.shields.io/badge/Platform-macOS%2026%2B-blue?style=for-the-badge&logo=apple" alt="macOS" />
-    <img src="https://img.shields.io/badge/API-Metal%204-000000?style=for-the-badge" alt="Metal 4" />
-    <img src="https://img.shields.io/badge/Build-CMake-green?style=for-the-badge&logo=cmake" alt="CMake" />
-    <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License" />
-  </p>
-</div>
+A high-performance Direct3D 12 to Apple Metal translation layer for Apple Silicon.
 
----
+<p>
+  <img src="https://img.shields.io/badge/Platform-macOS%2026%2B-blue?style=for-the-badge&logo=apple" alt="macOS" />
+  <img src="https://img.shields.io/badge/API-Metal%204-000000?style=for-the-badge" alt="Metal 4" />
+  <img src="https://img.shields.io/badge/Build-CMake-green?style=for-the-badge&logo=cmake" alt="CMake" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License" />
+</p>
 
 ## Overview
 
-**Metalloid** is an advanced translation layer engineered specifically for Apple Silicon hardware. It maps **Direct3D 12 API** calls directly to **Apple's Metal framework**, allowing complex DirectX 12 engines—such as **Unreal Engine 5**—to run natively on macOS with zero-overhead translation.
+Metalloid is an advanced translation layer engineered specifically for Apple Silicon hardware. It maps Direct3D 12 API calls directly to Apple's Metal framework, allowing complex DirectX 12 engines to run natively on macOS with zero-overhead translation. By utilizing modern Metal 4 features and dynamic shader compilation, Metalloid delivers a fluid, high-fidelity gaming experience without the traditional emulation penalties.
 
-By utilizing modern Metal 4 features and dynamic shader compilation, Metalloid delivers a fluid, high-fidelity gaming experience without the traditional emulation penalties.
+## Performance
 
----
+Metalloid has been heavily optimized for complex rendering pipelines. When benchmarking demanding DirectX 12 workloads, Metalloid demonstrates a massive performance uplift compared to Apple's native D3DMetal translation layer on the exact same hardware. The architectural shift to zero-overhead caching and asynchronous pipeline dispatching completely eliminates compilation stutter after the first run.
 
-## Performance & Compatibility
+![Metalloid Performance](Documentation/Images/performance_56fps.jpg)
 
-Metalloid has been heavily optimized for complex rendering pipelines. When benchmarking the **Unreal Engine 5 London Demo**, Metalloid achieved **56 FPS at 17.84ms**, demonstrating a staggering **311% performance uplift** compared to Apple's native D3DMetal layer (which averaged 18 FPS at 55ms on the exact same hardware and workload).
+## Issues in DX12
 
-![Metalloid UE5 London Demo Performance](Documentation/Images/performance_56fps.jpg)
+A major challenge in translating DirectX 12 to Metal has been state synchronization. DirectX 12 utilizes Enhanced Barriers for granular resource state transitions, which historically caused massive pipeline stalls when emulated on Metal. Metalloid implements a robust, fully compliant fix for DirectX 12 Enhanced Barriers, ensuring flawless synchronization and preventing these stalls entirely.
 
-### Core Advancements:
-- **DirectX 12 Enhanced Barriers:** Fully compliant fix implemented, ensuring flawless synchronization and preventing pipeline stalls typically associated with state-transition emulation.
-- **Native Metal Translation:** Direct mapping of D3D12 device interfaces, command lists, and synchronization primitives to their exact Metal counterparts.
-- **Metal Shader Converter Integration:** Dynamic, runtime conversion of DXIL bytecode to Metal IR via Apple's `metal_irconverter`.
-- **Zero-Overhead Shader Caching:** Highly optimized, disk-backed caching system for LLVM IR pipelines, eliminating compilation stutter after the first run.
-- **Dynamic Descriptor Binding:** Fully mapped descriptor heaps utilizing Metal Tier 2 Argument Buffers.
+## Compatibility
 
----
+Metalloid acts as a drop-in replacement for `d3d12.dll` and `dxgi.dll`. It intercepts application rendering calls, manages GPU memory boundaries via Metal private storage modes, and dynamically orchestrates the asynchronous compilation of graphics and compute pipelines.
 
 ## Build Requirements
 
-Ensure your system meets the following prerequisites before compiling:
-
-- **OS:** macOS 26+ (Metal 4 supported hardware)
-- **Compiler:** Xcode 15 or later (Apple Clang)
-- **Build System:** CMake 3.24+
-- **Toolkit:** `metal_irconverter` (Apple Metal Shader Converter)
-
-### Compiling
-
-```bash
-mkdir build && cd build
-cmake ..
-make -j$(sysctl -n hw.logicalcpu)
-```
-
-This will produce the `d3d12.dylib` and `dxgi.dylib` files required for injection via Wine or CrossOver.
-
----
+- macOS 26+ (Metal 4 supported hardware)
+- Xcode 15 or later (Apple Clang)
+- CMake 3.24+
+- `metal_irconverter` (Apple Metal Shader Converter toolkit)
 
 ## Disclaimer
 
-*This project is an independent translation layer and is not officially affiliated with, nor endorsed by, Microsoft Corporation or Apple Inc.*
+This project is an independent translation layer and is not officially affiliated with, nor endorsed by, Microsoft Corporation or Apple Inc.
