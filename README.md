@@ -12,7 +12,7 @@
 The translation layer acts as a drop-in replacement for `d3d12.dll` and `dxgi.dll`. It intercepts application rendering calls, manages GPU memory boundaries via Metal private storage modes, and dynamically orchestrates the asynchronous compilation of graphics and compute pipelines.
 
 ### Build Requirements
-- macOS 14.0 or later
+- macOS 26+ (Metal 4)
 - Xcode 15 or later (Apple Clang)
 - CMake 3.24+
 - `metal_irconverter` (Apple Metal Shader Converter toolkit)
