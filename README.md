@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="Resources/Icon%20Exports/Icon-macOS-Default-1024%401x.png" width="128" alt="Metalloid Icon" />
-</div>
+<img src="Resources/Icon%20Exports/Icon-macOS-Default-1024%401x.png" width="128" alt="Metalloid Icon" />
 
 # Metalloid
 
