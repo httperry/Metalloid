@@ -759,7 +759,7 @@ void STDMETHODCALLTYPE MLCommandList::IASetVertexBuffers(UINT StartSlot, UINT Nu
 #ifdef __OBJC__
         if (m_activeRenderEncoder && res && res->GetMetalBuffer()) {
             id<MTLRenderCommandEncoder> enc = (id<MTLRenderCommandEncoder>)m_activeRenderEncoder;
-            [enc setVertexBuffer:res->GetMetalBuffer() offset:offset atIndex:StartSlot + i];
+            [enc setVertexBuffer:res->GetMetalBuffer() offset:offset attributeStride:pViews[i].StrideInBytes atIndex:StartSlot + i];
         }
 #endif
     }
@@ -1015,6 +1015,9 @@ void STDMETHODCALLTYPE MLCommandList::ClearUnorderedAccessViewUint(
         MLResource* res = static_cast<MLResource*>(pResource);
         TrackResourceAccess(res);
 #ifdef __OBJC__
+        if (m_activeComputeEncoder) {
+            [(id<MTLComputeCommandEncoder>)m_activeComputeEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers];
+        }
         // Requires creating a MTLBlitCommandEncoder to fill the buffer
         // Or executing a specialized compute shader to clear texture UAVs
 #endif
@@ -1027,7 +1030,17 @@ void STDMETHODCALLTYPE MLCommandList::ClearUnorderedAccessViewFloat(
     ID3D12Resource* pResource,
     const FLOAT Values[4],
     UINT NumRects,
-    const D3D12_RECT* pRects) {}
+    const D3D12_RECT* pRects) {
+    if (pResource) {
+        MLResource* res = static_cast<MLResource*>(pResource);
+        TrackResourceAccess(res);
+#ifdef __OBJC__
+        if (m_activeComputeEncoder) {
+            [(id<MTLComputeCommandEncoder>)m_activeComputeEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers];
+        }
+#endif
+    }
+}
 
 void STDMETHODCALLTYPE MLCommandList::ExecuteIndirect(
     ID3D12CommandSignature* pCommandSignature,

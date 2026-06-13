@@ -226,7 +226,7 @@ HRESULT STDMETHODCALLTYPE MLDevice::CreateGraphicsPipelineState(
             currentOffset[element.InputSlot] = offset + elementSize;
             
             // Overwrite stride with our computed cumulative size. It's a robust heuristic.
-            vertexDesc.layouts[element.InputSlot].stride = currentOffset[element.InputSlot];
+            vertexDesc.layouts[element.InputSlot].stride = MTLBufferLayoutStrideDynamic;
             vertexDesc.layouts[element.InputSlot].stepFunction = (element.InputSlotClass == D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA) ? MTLVertexStepFunctionPerInstance : MTLVertexStepFunctionPerVertex;
             vertexDesc.layouts[element.InputSlot].stepRate = (element.InputSlotClass == D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA) ? element.InstanceDataStepRate : 1;
         }
@@ -709,6 +709,16 @@ HRESULT STDMETHODCALLTYPE MLDevice::CreateCommittedResource(
             texDesc.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
         } else if (pDesc->Format == DXGI_FORMAT_R32_FLOAT) {
             texDesc.pixelFormat = MTLPixelFormatR32Float;
+        } else if (pDesc->Format == DXGI_FORMAT_R11G11B10_FLOAT) {
+            texDesc.pixelFormat = MTLPixelFormatRG11B10Float;
+        } else if (pDesc->Format == DXGI_FORMAT_R16_FLOAT) {
+            texDesc.pixelFormat = MTLPixelFormatR16Float;
+        } else if (pDesc->Format == DXGI_FORMAT_R16G16_FLOAT) {
+            texDesc.pixelFormat = MTLPixelFormatRG16Float;
+        } else if (pDesc->Format == DXGI_FORMAT_R16G16B16A16_FLOAT) {
+            texDesc.pixelFormat = MTLPixelFormatRGBA16Float;
+        } else if (pDesc->Format == DXGI_FORMAT_R10G10B10A2_UNORM) {
+            texDesc.pixelFormat = MTLPixelFormatRGB10A2Unorm;
         } else if (pDesc->Format == DXGI_FORMAT_NV12) {
             if (@available(macOS 10.15, *)) {
                 texDesc.pixelFormat = MTLPixelFormatGBGR422; 
