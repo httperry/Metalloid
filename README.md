@@ -3,10 +3,10 @@
 A high-performance Direct3D 12 to Apple Metal translation layer for Apple Silicon.
 
 <p>
-  <img src="https://img.shields.io/badge/Platform-macOS%2026%2B-blue?style=for-the-badge&logo=apple" alt="macOS" />
-  <img src="https://img.shields.io/badge/API-Metal%204-000000?style=for-the-badge" alt="Metal 4" />
-  <img src="https://img.shields.io/badge/Build-CMake-green?style=for-the-badge&logo=cmake" alt="CMake" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/Platform-macOS%2026%2B-blue?style=flat-square&logo=apple" alt="macOS" />
+  <img src="https://img.shields.io/badge/API-Metal%204-blue?style=flat-square" alt="Metal 4" />
+  <img src="https://img.shields.io/badge/Build-CMake-blue?style=flat-square&logo=cmake" alt="CMake" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
 
 ## Overview
