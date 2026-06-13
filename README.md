@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="Resources/Icon%20Exports/Icon-macOS-Default-1024%401x.png" width="128" alt="Metalloid Icon" />
+</div>
+
 # Metalloid
 
 A high-performance Direct3D 12 to Apple Metal translation layer for Apple Silicon.
