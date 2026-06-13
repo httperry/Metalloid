@@ -5,6 +5,10 @@
 #include "MLDescriptor.h"
 #include <vector>
 
+#ifdef __OBJC__
+@protocol MTLBuffer;
+#endif
+
 class MLDescriptorHeap : public ID3D12DescriptorHeap {
     ML_DECL_PRIVATE_DATA()
 private:
@@ -12,6 +16,14 @@ private:
     ID3D12Device* m_parentDevice;
     D3D12_DESCRIPTOR_HEAP_DESC m_desc;
     std::vector<MLDescriptor> m_descriptors;
+
+#ifdef __OBJC__
+    id<MTLBuffer> m_srvUavMemoryBindingBuffer = nullptr;
+#else
+    void* m_srvUavMemoryBindingBuffer = nullptr;
+#endif
+
+    std::vector<std::pair<UINT64, UINT64>> m_privateStorageBounds;
 
 public:
     MLDescriptorHeap(ID3D12Device* parentDevice, const D3D12_DESCRIPTOR_HEAP_DESC& desc);

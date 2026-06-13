@@ -301,8 +301,9 @@ HRESULT STDMETHODCALLTYPE MLDevice::CreateComputePipelineState(
     using namespace Metalloid;
     id<MTLDevice> device = m_metalDevice;
 
+    UINT tgX = 1, tgY = 1, tgZ = 1;
     std::vector<uint8_t> mslSource = MLShaderCompiler::TranslateDXILToMetallibData(
-        pDesc->CS.pShaderBytecode, pDesc->CS.BytecodeLength, "cs_main", "cs");
+        pDesc->CS.pShaderBytecode, pDesc->CS.BytecodeLength, "cs_main", "cs", &tgX, &tgY, &tgZ);
     if (mslSource.empty()) return E_FAIL;
 
     dispatch_data_t dispatchData = dispatch_data_create(mslSource.data(), mslSource.size(), dispatch_get_main_queue(), DISPATCH_DATA_DESTRUCTOR_DEFAULT);
@@ -322,6 +323,7 @@ HRESULT STDMETHODCALLTYPE MLDevice::CreateComputePipelineState(
     }
 
     MLPipelineState* pso = new MLPipelineState(this, (MetalComputePipelineType)nil);
+    pso->SetComputeThreads(tgX, tgY, tgZ);
     HRESULT hr = pso->QueryInterface(riid, ppPipelineState);
 
     pso->AddRef();

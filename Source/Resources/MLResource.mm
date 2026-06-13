@@ -15,6 +15,21 @@ MLResource::MLResource(ID3D12Device* parentDevice, std::function<void(UINT64)> u
     } else {
         memset(&m_heapProperties, 0, sizeof(m_heapProperties));
     }
+#ifdef __OBJC__
+    if (m_metalResource && desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
+        id<MTLBuffer> buf = (id<MTLBuffer>)m_metalResource;
+        if (buf.storageMode == MTLStorageModePrivate) {
+            m_isPrivateStorage = true;
+            m_privateStorageBoundsSize = buf.length;
+            m_privateStorageBoundsOffset = 0;
+        }
+    } else if (m_metalResource) {
+        id<MTLTexture> tex = (id<MTLTexture>)m_metalResource;
+        if (tex.storageMode == MTLStorageModePrivate) {
+            m_isPrivateStorage = true;
+        }
+    }
+#endif
     std::cout << "[Metalloid] ID3D12Resource created. Dimension: " << desc.Dimension << std::endl;
 }
 

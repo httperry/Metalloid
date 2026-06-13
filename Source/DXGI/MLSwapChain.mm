@@ -6,6 +6,7 @@
 #ifdef __OBJC__
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
+#import <CoreGraphics/CoreGraphics.h>
 #endif
 
 extern "C" HRESULT WINAPI CreateDXGIFactory(REFIID riid, void** ppFactory);
@@ -41,11 +42,37 @@ MLSwapChain::MLSwapChain(IUnknown* pDevice, UINT width, UINT height, UINT buffer
     
     m_metalLayer = [CAMetalLayer layer];
     m_metalLayer.device = mtlDevice;
-    m_metalLayer.pixelFormat = MTLPixelFormatRGBA8Unorm;
+    
+    MTLPixelFormat metalPixelFormat = MTLPixelFormatRGBA8Unorm;
+    CGColorSpaceRef colorSpace = nullptr;
+    BOOL wantsEDR = NO;
+
+    if (m_format == DXGI_FORMAT_R10G10B10A2_UNORM) {
+        metalPixelFormat = MTLPixelFormatRGB10A2Unorm;
+        colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceITUR_2100_PQ);
+        wantsEDR = YES;
+    } else if (m_format == DXGI_FORMAT_R16G16B16A16_FLOAT) {
+        metalPixelFormat = MTLPixelFormatRGBA16Float;
+        colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearDisplayP3);
+        wantsEDR = YES;
+    } else if (m_format == DXGI_FORMAT_B8G8R8A8_UNORM) {
+        metalPixelFormat = MTLPixelFormatBGRA8Unorm;
+    }
+    
+    m_metalLayer.pixelFormat = metalPixelFormat;
     m_metalLayer.drawableSize = CGSizeMake(m_width, m_height);
+    if (wantsEDR) {
+        m_metalLayer.wantsExtendedDynamicRangeContent = YES;
+        if (colorSpace) {
+            m_metalLayer.colorspace = colorSpace;
+        }
+    }
+    if (colorSpace) {
+        CGColorSpaceRelease(colorSpace);
+    }
     
     for (UINT i = 0; i < m_backBufferCount; ++i) {
-        MTLTextureDescriptor* desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+        MTLTextureDescriptor* desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:metalPixelFormat
                                                                                        width:m_width
                                                                                       height:m_height
                                                                                    mipmapped:NO];
@@ -261,15 +288,42 @@ HRESULT STDMETHODCALLTYPE MLSwapChain::ResizeBuffers(
     m_currentBufferIndex = 0;
 
 #ifdef __OBJC__
+    MTLPixelFormat metalPixelFormat = MTLPixelFormatRGBA8Unorm;
+    CGColorSpaceRef colorSpace = nullptr;
+    BOOL wantsEDR = NO;
+
+    if (m_format == DXGI_FORMAT_R10G10B10A2_UNORM) {
+        metalPixelFormat = MTLPixelFormatRGB10A2Unorm;
+        colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceITUR_2100_PQ);
+        wantsEDR = YES;
+    } else if (m_format == DXGI_FORMAT_R16G16B16A16_FLOAT) {
+        metalPixelFormat = MTLPixelFormatRGBA16Float;
+        colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearDisplayP3);
+        wantsEDR = YES;
+    } else if (m_format == DXGI_FORMAT_B8G8R8A8_UNORM) {
+        metalPixelFormat = MTLPixelFormatBGRA8Unorm;
+    }
+
     if (m_metalLayer) {
+        m_metalLayer.pixelFormat = metalPixelFormat;
         m_metalLayer.drawableSize = CGSizeMake(m_width, m_height);
+        if (wantsEDR) {
+            m_metalLayer.wantsExtendedDynamicRangeContent = YES;
+            if (colorSpace) {
+                m_metalLayer.colorspace = colorSpace;
+            }
+        }
+    }
+    
+    if (colorSpace) {
+        CGColorSpaceRelease(colorSpace);
     }
 
     id<MTLCommandQueue> nativeQueue = (__bridge id<MTLCommandQueue>)m_device;
     id<MTLDevice> mtlDevice = nativeQueue.device;
     
     for (UINT i = 0; i < m_backBufferCount; ++i) {
-        MTLTextureDescriptor* desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+        MTLTextureDescriptor* desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:metalPixelFormat
                                                                                        width:m_width
                                                                                       height:m_height
                                                                                    mipmapped:NO];

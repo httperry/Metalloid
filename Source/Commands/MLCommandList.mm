@@ -163,6 +163,9 @@ void STDMETHODCALLTYPE MLCommandList::ResourceBarrier(
     const D3D12_RESOURCE_BARRIER* pBarriers) {
     // Basic barrier tracking and GPU Synchronization
     bool needsMemoryBarrier = false;
+#ifdef __OBJC__
+    MTLBarrierScope scope = 0;
+#endif
 
     for (UINT i = 0; i < NumBarriers; ++i) {
         if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION) {
@@ -171,22 +174,47 @@ void STDMETHODCALLTYPE MLCommandList::ResourceBarrier(
                 res->SetState(pBarriers[i].Transition.StateAfter);
                 TrackResourceAccess(res);
                 needsMemoryBarrier = true;
+#ifdef __OBJC__
+                if (res->GetDimension() == D3D12_RESOURCE_DIMENSION_BUFFER) {
+                    scope |= MTLBarrierScopeBuffers;
+                } else {
+                    scope |= MTLBarrierScopeTextures;
+                }
+#endif
             }
-        } else if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_UAV || 
-                   pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_ALIASING) {
+        } else if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_UAV) {
             needsMemoryBarrier = true;
+            MLResource* res = static_cast<MLResource*>(pBarriers[i].UAV.pResource);
+#ifdef __OBJC__
+            if (res) {
+                if (res->GetDimension() == D3D12_RESOURCE_DIMENSION_BUFFER) {
+                    scope |= MTLBarrierScopeBuffers;
+                } else {
+                    scope |= MTLBarrierScopeTextures;
+                }
+            } else {
+                scope |= (MTLBarrierScopeBuffers | MTLBarrierScopeTextures);
+            }
+#endif
+        } else if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_ALIASING) {
+            needsMemoryBarrier = true;
+#ifdef __OBJC__
+            scope |= (MTLBarrierScopeBuffers | MTLBarrierScopeTextures);
+#endif
         }
     }
 
 #ifdef __OBJC__
     if (needsMemoryBarrier) {
+        if (scope == 0) scope = MTLBarrierScopeBuffers | MTLBarrierScopeTextures;
+        
         if (m_activeRenderEncoder) {
             // In Metal, overlapping reads/writes in the same encoder require a memory barrier.
-            [(id<MTLRenderCommandEncoder>)m_activeRenderEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers | MTLBarrierScopeRenderTargets | MTLBarrierScopeTextures
+            [(id<MTLRenderCommandEncoder>)m_activeRenderEncoder memoryBarrierWithScope:scope | MTLBarrierScopeRenderTargets
                                                                           afterStages:MTLRenderStageVertex | MTLRenderStageFragment
                                                                          beforeStages:MTLRenderStageVertex | MTLRenderStageFragment];
         } else if (m_activeComputeEncoder) {
-            [(id<MTLComputeCommandEncoder>)m_activeComputeEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers | MTLBarrierScopeTextures];
+            [(id<MTLComputeCommandEncoder>)m_activeComputeEncoder memoryBarrierWithScope:scope];
         }
     }
 #endif
@@ -320,9 +348,13 @@ void STDMETHODCALLTYPE MLCommandList::Dispatch(
         // In D3D12, [numthreads] is defined inside the HLSL shader. 
         // In Metal, we must pass threadsPerThreadgroup from the CPU. 
         // A robust translation layer parses DXIL reflection to extract this at Pipeline Creation time.
-        // Assuming 8x8x1 for this milestone.
         MTLSize threadgroups = MTLSizeMake(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
-        MTLSize threadsPerThreadgroup = MTLSizeMake(8, 8, 1);
+        
+        UINT tx = 8, ty = 8, tz = 1;
+        if (m_currentPSO) {
+            m_currentPSO->GetComputeThreads(tx, ty, tz);
+        }
+        MTLSize threadsPerThreadgroup = MTLSizeMake(tx, ty, tz);
         
         for (UINT i = 0; i < 64; ++i) {
             if (m_computeRootArguments[i].type == RootArgument::UAV) {

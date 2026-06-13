@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 
 namespace Metalloid {
 
@@ -322,7 +323,7 @@ std::string MLShaderCompiler::TranslateWorkGraphToMSL(const D3D12_WORK_GRAPH_DES
     return msl.str();
 }
 
-std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* dxilBytecode, SIZE_T bytecodeLength, const char* entryPoint, const char* targetProfile) {
+std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* dxilBytecode, SIZE_T bytecodeLength, const char* entryPoint, const char* targetProfile, UINT* outTgX, UINT* outTgY, UINT* outTgZ) {
     static bool initialized = false;
     static IRCompiler* (*pIRCompilerCreate)(void) = nullptr;
     static IRObject* (*pIRObjectCreateFromDXIL)(const uint8_t*, size_t, IRBytecodeOwnership) = nullptr;
@@ -337,12 +338,20 @@ std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* d
     static IRShaderStage (*pIRObjectGetMetalIRShaderStage)(const IRObject*) = nullptr;
     static IRMetalLibBinary* (*pIRMetalLibBinaryCreate)(void) = nullptr;
     static void (*pIRMetalLibBinaryDestroy)(IRMetalLibBinary*) = nullptr;
+    
+    // Reflection
+    static IRShaderReflection* (*pIRShaderReflectionCreate)(void) = nullptr;
+    static void (*pIRShaderReflectionDestroy)(IRShaderReflection*) = nullptr;
+    static bool (*pIRObjectGetReflection)(const IRObject*, IRShaderStage, IRShaderReflection*) = nullptr;
+    static bool (*pIRShaderReflectionCopyComputeInfo)(const IRShaderReflection*, IRReflectionVersion, IRVersionedCSInfo*) = nullptr;
+    static bool (*pIRShaderReflectionReleaseComputeInfo)(IRVersionedCSInfo*) = nullptr;
 
-    if (!initialized) {
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
         void* handle = dlopen("libmetalirconverter.dylib", RTLD_NOW);
         if (!handle) {
             std::cerr << "[Metalloid] FATAL ERROR: libmetalirconverter.dylib not found. Please ensure your launcher downloaded it." << std::endl;
-            return {};
+            return;
         }
 
         pIRCompilerCreate = (IRCompiler* (*)(void))dlsym(handle, "IRCompilerCreate");
@@ -358,9 +367,12 @@ std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* d
         pIRObjectGetMetalIRShaderStage = (IRShaderStage (*)(const IRObject*))dlsym(handle, "IRObjectGetMetalIRShaderStage");
         pIRMetalLibBinaryCreate = (IRMetalLibBinary* (*)(void))dlsym(handle, "IRMetalLibBinaryCreate");
         pIRMetalLibBinaryDestroy = (void (*)(IRMetalLibBinary*))dlsym(handle, "IRMetalLibBinaryDestroy");
-
-        initialized = true;
-    }
+        pIRShaderReflectionCreate = (IRShaderReflection* (*)(void))dlsym(handle, "IRShaderReflectionCreate");
+        pIRShaderReflectionDestroy = (void (*)(IRShaderReflection*))dlsym(handle, "IRShaderReflectionDestroy");
+        pIRObjectGetReflection = (bool (*)(const IRObject*, IRShaderStage, IRShaderReflection*))dlsym(handle, "IRObjectGetReflection");
+        pIRShaderReflectionCopyComputeInfo = (bool (*)(const IRShaderReflection*, IRReflectionVersion, IRVersionedCSInfo*))dlsym(handle, "IRShaderReflectionCopyComputeInfo");
+        pIRShaderReflectionReleaseComputeInfo = (bool (*)(IRVersionedCSInfo*))dlsym(handle, "IRShaderReflectionReleaseComputeInfo");
+    });
 
     std::string_view bytecodeStr(static_cast<const char*>(dxilBytecode), bytecodeLength);
     size_t hashValue = std::hash<std::string_view>{}(bytecodeStr);
@@ -369,10 +381,17 @@ std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* d
     std::filesystem::create_directories(cacheDir);
     
     std::string cacheFilePath = (cacheDir / (std::to_string(hashValue) + ".metallib")).string();
+    std::string cacheMetaPath = (cacheDir / (std::to_string(hashValue) + ".meta")).string();
     
-    if (std::filesystem::exists(cacheFilePath)) {
+    if (std::filesystem::exists(cacheFilePath) && std::filesystem::exists(cacheMetaPath)) {
         std::ifstream file(cacheFilePath, std::ios::binary | std::ios::ate);
-        if (file) {
+        std::ifstream metaFile(cacheMetaPath, std::ios::binary);
+        if (file && metaFile) {
+            uint32_t tg[3] = {1, 1, 1};
+            metaFile.read(reinterpret_cast<char*>(tg), sizeof(tg));
+            if (outTgX) *outTgX = tg[0];
+            if (outTgY) *outTgY = tg[1];
+            if (outTgZ) *outTgZ = tg[2];
             std::streamsize size = file.tellg();
             file.seekg(0, std::ios::beg);
             std::vector<uint8_t> buffer(size);
@@ -425,6 +444,27 @@ std::vector<uint8_t> MLShaderCompiler::TranslateDXILToMetallibData(const void* d
                 }
             }
         }
+        
+        if (stage == IRShaderStageCompute && pIRShaderReflectionCreate && pIRObjectGetReflection) {
+            IRShaderReflection* reflection = pIRShaderReflectionCreate();
+            if (pIRObjectGetReflection(metalObj, stage, reflection)) {
+                IRVersionedCSInfo csInfo;
+                if (pIRShaderReflectionCopyComputeInfo(reflection, IRReflectionVersion_1_0, &csInfo)) {
+                    uint32_t tg[3] = {csInfo.info_1_0.tg_size[0], csInfo.info_1_0.tg_size[1], csInfo.info_1_0.tg_size[2]};
+                    if (outTgX) *outTgX = tg[0];
+                    if (outTgY) *outTgY = tg[1];
+                    if (outTgZ) *outTgZ = tg[2];
+                    
+                    std::ofstream metaFile(cacheMetaPath, std::ios::binary);
+                    if (metaFile) {
+                        metaFile.write(reinterpret_cast<const char*>(tg), sizeof(tg));
+                    }
+                    pIRShaderReflectionReleaseComputeInfo(&csInfo);
+                }
+            }
+            pIRShaderReflectionDestroy(reflection);
+        }
+        
         pIRMetalLibBinaryDestroy(libBinary);
         pIRObjectDestroy(metalObj);
     }
