@@ -36,6 +36,10 @@ Metalloid acts as a drop-in replacement for `d3d12.dll` and `dxgi.dll`. It inter
 - CMake 3.24+
 - `metal_irconverter` (Apple Metal Shader Converter toolkit)
 
+## Acknowledgments
+
+Special thanks to **Scans Labs** for providing their incredibly detailed Unreal Engine 5 London demo world, which has been instrumental in benchmarking and testing this translation layer.
+
 ## Disclaimer
 
 This project is an independent translation layer and is not officially affiliated with, nor endorsed by, Microsoft Corporation or Apple Inc.
